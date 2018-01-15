@@ -17,8 +17,7 @@
 
 
 /** Extended statistics about a CAddress */
-class CAddrInfo : public CAddress
-{
+class CAddrInfo : public CAddress{
 private:
     // where knowledge about this address first came from
     CNetAddr source;

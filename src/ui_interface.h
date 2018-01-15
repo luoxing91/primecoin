@@ -15,8 +15,7 @@ class CWallet;
 class uint256;
 
 /** General change type (added, updated, removed). */
-enum ChangeType
-{
+enum ChangeType{
     CT_NEW,
     CT_UPDATED,
     CT_DELETED

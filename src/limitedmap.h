@@ -8,8 +8,8 @@
 #include <deque>
 
 /** STL-like map container that only keeps the N elements with the highest value. */
-template <typename K, typename V> class limitedmap
-{
+template <typename K, typename V>
+    class limitedmap{
 public:
     typedef K key_type;
     typedef V mapped_type;
@@ -84,14 +84,14 @@ public:
         rmap.insert(make_pair(v, itTarget));
     }
     size_type max_size() const { return nMaxSize; }
-    size_type max_size(size_type s)
-    {
-        if (s)
-            while (map.size() > s)
-            {
+    size_type max_size(size_type s){
+    
+        if (s){
+            while (map.size() > s){
                 map.erase(rmap.begin()->second);
                 rmap.erase(rmap.begin());
             }
+        }
         nMaxSize = s;
         return nMaxSize;
     }

@@ -4755,8 +4755,7 @@ uint64 CTxOutCompressor::DecompressAmount(uint64 x)
 }
 
 
-class CMainCleanup
-{
+class CMainCleanup{
 public:
     CMainCleanup() {}
     ~CMainCleanup() {

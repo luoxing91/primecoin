@@ -18,8 +18,7 @@ using namespace std;
 // mapWallet
 //
 
-struct CompareValueOnly
-{
+struct CompareValueOnly{
     bool operator()(const pair<int64, pair<const CWalletTx*, unsigned int> >& t1,
                     const pair<int64, pair<const CWalletTx*, unsigned int> >& t2) const
     {

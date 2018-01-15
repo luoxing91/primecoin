@@ -31,8 +31,7 @@ static const CBigNum bnTrue(1);
 static const size_t nMaxNumSize = 4;
 
 
-CBigNum CastToBigNum(const valtype& vch)
-{
+CBigNum CastToBigNum(const valtype& vch){
     if (vch.size() > nMaxNumSize)
         throw runtime_error("CastToBigNum() : overflow");
     // Get rid of extra leading zeros

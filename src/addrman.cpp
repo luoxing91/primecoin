@@ -7,8 +7,7 @@
 
 using namespace std;
 
-int CAddrInfo::GetTriedBucket(const std::vector<unsigned char> &nKey) const
-{
+int CAddrInfo::GetTriedBucket(const std::vector<unsigned char> &nKey) const{
     CDataStream ss1(SER_GETHASH, 0);
     std::vector<unsigned char> vchKey = GetKey();
     ss1 << nKey << vchKey;
@@ -21,8 +20,7 @@ int CAddrInfo::GetTriedBucket(const std::vector<unsigned char> &nKey) const
     return hash2 % ADDRMAN_TRIED_BUCKET_COUNT;
 }
 
-int CAddrInfo::GetNewBucket(const std::vector<unsigned char> &nKey, const CNetAddr& src) const
-{
+int CAddrInfo::GetNewBucket(const std::vector<unsigned char> &nKey, const CNetAddr& src) const{
     CDataStream ss1(SER_GETHASH, 0);
     std::vector<unsigned char> vchGroupKey = GetGroup();
     std::vector<unsigned char> vchSourceGroupKey = src.GetGroup();
@@ -35,8 +33,7 @@ int CAddrInfo::GetNewBucket(const std::vector<unsigned char> &nKey, const CNetAd
     return hash2 % ADDRMAN_NEW_BUCKET_COUNT;
 }
 
-bool CAddrInfo::IsTerrible(int64 nNow) const
-{
+bool CAddrInfo::IsTerrible(int64_t nNow) const{
     if (nLastTry && nLastTry >= nNow-60) // never remove things tried the last minute
         return false;
 

@@ -12,7 +12,6 @@
 #include <boost/variant.hpp>
 
 #include "keystore.h"
-#include "bignum.h"
 
 class CCoins;
 class CTransaction;
@@ -20,8 +19,7 @@ class CTransaction;
 static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520; // bytes
 
 /** Signature hash types/flags */
-enum
-{
+enum{
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,

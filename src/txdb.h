@@ -9,8 +9,7 @@
 #include "leveldb.h"
 
 /** CCoinsView backed by the LevelDB coin database (chainstate/) */
-class CCoinsViewDB : public CCoinsView
-{
+class CCoinsViewDB : public CCoinsView{
 protected:
     CLevelDB db;
 public:

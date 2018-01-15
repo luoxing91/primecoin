@@ -12,16 +12,14 @@
 # include <arpa/inet.h>
 #endif
 
-static const char* ppszTypeName[] =
-{
+static const char* ppszTypeName[] ={
     "ERROR",
     "tx",
     "block",
     "filtered block"
 };
 
-CMessageHeader::CMessageHeader()
-{
+CMessageHeader::CMessageHeader(){
     memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
     memset(pchCommand, 0, sizeof(pchCommand));
     pchCommand[1] = 1;
@@ -29,40 +27,36 @@ CMessageHeader::CMessageHeader()
     nChecksum = 0;
 }
 
-CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn)
-{
+CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn){
     memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
     strncpy(pchCommand, pszCommand, COMMAND_SIZE);
     nMessageSize = nMessageSizeIn;
     nChecksum = 0;
 }
 
-std::string CMessageHeader::GetCommand() const
-{
-    if (pchCommand[COMMAND_SIZE-1] == 0)
+std::string CMessageHeader::GetCommand() const{
+    if (pchCommand[COMMAND_SIZE-1] == 0){
         return std::string(pchCommand, pchCommand + strlen(pchCommand));
-    else
-        return std::string(pchCommand, pchCommand + COMMAND_SIZE);
+    }
+    return std::string(pchCommand, pchCommand + COMMAND_SIZE);
 }
 
-bool CMessageHeader::IsValid() const
-{
+bool CMessageHeader::IsValid() const{
     // Check start string
     if (memcmp(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart)) != 0)
         return false;
 
     // Check the command string for errors
-    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
-    {
-        if (*p1 == 0)
-        {
+    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++){
+        if (*p1 == 0){
             // Must be all zeros after the first zero
             for (; p1 < pchCommand + COMMAND_SIZE; p1++)
-                if (*p1 != 0)
+                if (*p1 != 0){
                     return false;
-        }
-        else if (*p1 < ' ' || *p1 > 0x7E)
+                }
+        }else if (*p1 < ' ' || *p1 > 0x7E){
             return false;
+        }
     }
 
     // Message size
