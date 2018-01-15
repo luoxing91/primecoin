@@ -8,12 +8,10 @@
 #include <stdexcept>
 #include <vector>
 #include <openssl/bn.h>
-
 #include "util.h" // for uint64
 
 /** Errors thrown by the bignum class */
-class bignum_error : public std::runtime_error
-{
+class bignum_error : public std::runtime_error{
 public:
     explicit bignum_error(const std::string& str) : std::runtime_error(str) {}
 };
@@ -51,9 +49,8 @@ public:
 class CBigNum : public BIGNUM
 {
 public:
-    CBigNum()
-    {
-        BN_init(this);
+ CBigNum(){
+     
     }
 
     CBigNum(const CBigNum& b)
@@ -131,7 +128,7 @@ public:
 
         if (sn < (int64)0)
         {
-            // Since the minimum signed integer cannot be represented as positive so long as its type is signed, 
+            // Since the minimum signed integer cannot be represented as positive so long as its type is signed,
             // and it's not well-defined what happens if you make it unsigned before negating it,
             // we instead increment the negative integer by 1, convert it, then increment the (now positive) unsigned integer by 1 to compensate
             n = -(sn + 1);
@@ -586,5 +583,5 @@ inline bool operator<=(const CBigNum& a, const CBigNum& b) { return (BN_cmp(&a, 
 inline bool operator>=(const CBigNum& a, const CBigNum& b) { return (BN_cmp(&a, &b) >= 0); }
 inline bool operator<(const CBigNum& a, const CBigNum& b)  { return (BN_cmp(&a, &b) < 0); }
 inline bool operator>(const CBigNum& a, const CBigNum& b)  { return (BN_cmp(&a, &b) > 0); }
-
+/*  */
 #endif

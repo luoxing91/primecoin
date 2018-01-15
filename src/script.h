@@ -233,16 +233,91 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
     return str;
 }
 
+class scriptnum_error : public std::runtime_error{
+public:
+    explicit scriptnum_error(const std::string& str) : std::runtime_error(str) {}
+};
 
+struct CScriptNum{
+    int64_t m_value;
+    static int64_t set_vch(const std::vector<unsigned char>& vch){
+        if (vch.empty()){
+            return 0;
+        }
+        int64_t result = 0;
+        for (size_t i = 0; i != vch.size(); ++i){
+             result |= static_cast<int64_t>(vch[i]) << 8*i;
+        }
 
+        if (vch.back() & 0x80){
+            return -((int64_t)(result & ~(0x80ULL << (8 * (vch.size() - 1)))));
+        }
+        return result;
+        
+    }
+    explicit CScriptNum(const int64_t& n):m_value(n){
+    }
+    static const size_t nDefaultMaxNumSize = 4;
+    explicit CScriptNum(const std::vector<unsigned char>& vch,
+                        bool fRequireMinimal,
+                        const size_t nMaxNumSize = nDefaultMaxNumSize){
+        if (vch.size() > nMaxNumSize) {
+            throw scriptnum_error("script number overflow");
+        }
+        if (fRequireMinimal && vch.size() > 0) {
+            if ((vch.back() & 0x7f) == 0) {
+                if (vch.size() <= 1 || (vch[vch.size() - 2] & 0x80) == 0) {
+                    throw scriptnum_error("non-minimally encoded script number");
+                }
+            }
+        }
+        m_value = set_vch(vch);
+    }
+    inline CScriptNum operator-() const{
+        assert(m_value != std::numeric_limits<int64_t>::min());
+        return CScriptNum(-m_value);
+    }
+    int getint() const{
+        if (m_value > std::numeric_limits<int>::max()){
+            return std::numeric_limits<int>::max();
+        }else if(m_value < std::numeric_limits<int>::min()){
+            return std::numeric_limits<int>::min();
+        }
+        return m_value;
+    }
+    
+    std::vector<uint8_t> getvch() const{
+        return serialize(m_value);
+    }
+    static std::vector<uint8_t> serialize(const int64_t& value){
+        if(value == 0){
+            return std::vector<uint8_t>();
+        }
+        
+        std::vector<uint8_t> result;
+        const bool neg = value < 0;
+        uint64_t absvalue = neg ? -value : value;
+        while(absvalue){
+            result.push_back(absvalue & 0xff);
+            absvalue >>= 8;
+        }
+
+        if (result.back() & 0x80){
+            result.push_back(neg ? 0x80 : 0);
+        }else if(neg){
+            result.back() |= 0x80;
+        }
+        return result;
+    }
+    
+};
 
 
 
 
 
 /** Serialized script, used inside transaction inputs and outputs */
-class CScript : public std::vector<unsigned char>
-{
+class CScript : public std::vector<unsigned char>{
 protected:
     CScript& push_int64(int64 n)
     {
@@ -308,7 +383,7 @@ public:
 
     explicit CScript(opcodetype b)     { operator<<(b); }
     explicit CScript(const uint256& b) { operator<<(b); }
-    explicit CScript(const CBigNum& b) { operator<<(b); }
+    explicit CScript(const CScriptNum& b) { operator<<(b); }
     explicit CScript(const std::vector<unsigned char>& b) { operator<<(b); }
 
 
@@ -324,6 +399,11 @@ public:
     CScript& operator<<(unsigned long b)  { return push_uint64(b); }
     CScript& operator<<(uint64 b)         { return push_uint64(b); }
 
+    CScript& operator<<(const CScriptNum& b)
+    {
+        *this << b.getvch();
+        return *this;
+    }
     CScript& operator<<(opcodetype opcode)
     {
         if (opcode < 0 || opcode > 0xff)

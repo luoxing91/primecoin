@@ -2,7 +2,7 @@
 
 #include <QMenu>
 #include <QWidget>
-
+#include <QtMac>
 extern void qt_mac_set_dock_menu(QMenu*);
 
 #undef slots
@@ -77,12 +77,12 @@ void MacDockIconHandler::setIcon(const QIcon &icon)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSImage *image;
-    if (icon.isNull())
+    if (icon.isNull()){
         image = [[NSImage imageNamed:@"NSApplicationIcon"] retain];
-    else {
+    }else {
         QSize size = icon.actualSize(QSize(128, 128));
         QPixmap pixmap = icon.pixmap(size);
-        CGImageRef cgImage = pixmap.toMacCGImageRef();
+        CGImageRef cgImage = QtMac::toCGImageRef(pixmap);
         image = [[NSImage alloc] initWithCGImage:cgImage size:NSZeroSize];
         CFRelease(cgImage);
     }
