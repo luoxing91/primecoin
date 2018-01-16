@@ -1,6 +1,8 @@
 // Copyright (c) 2012 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2013 Primecoin developers
+// Distributed under conditional MIT/X11 software license,
+// see the accompanying file COPYING.
+
 #ifndef BITCOIN_VERSION_H
 #define BITCOIN_VERSION_H
 
@@ -20,6 +22,13 @@ static const int CLIENT_VERSION =
 extern const std::string CLIENT_NAME;
 extern const std::string CLIENT_BUILD;
 extern const std::string CLIENT_DATE;
+
+static const int PRIMECOIN_VERSION =
+                           1000000 * PRIMECOIN_VERSION_MAJOR
+                         +   10000 * PRIMECOIN_VERSION_MINOR
+                         +     100 * PRIMECOIN_VERSION_REVISION
+                         +       1 * PRIMECOIN_VERSION_BUILD;
+
 
 //
 // network protocol versioning

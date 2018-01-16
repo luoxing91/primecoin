@@ -12,6 +12,7 @@
 #include <boost/variant.hpp>
 
 #include "keystore.h"
+#include "bignum.h"
 
 class CCoins;
 class CTransaction;
@@ -316,6 +317,7 @@ struct CScriptNum{
 
 /** Serialized script, used inside transaction inputs and outputs */
 class CScript : public std::vector<unsigned char>{
+
 protected:
     CScript& push_int64(int64 n)
     {
@@ -353,8 +355,7 @@ public:
     CScript(const unsigned char* pbegin, const unsigned char* pend) : std::vector<unsigned char>(pbegin, pend) { }
 #endif
 
-    CScript& operator+=(const CScript& b)
-    {
+    CScript& operator+=(const CScript& b){
         insert(end(), b.begin(), b.end());
         return *this;
     }
@@ -397,11 +398,13 @@ public:
     CScript& operator<<(unsigned long b)  { return push_uint64(b); }
     CScript& operator<<(uint64 b)         { return push_uint64(b); }
 
-    CScript& operator<<(const CScriptNum& b)
-    {
+
+    CScript& operator<<(const CScriptNum& b){
+        
         *this << b.getvch();
         return *this;
     }
+
     CScript& operator<<(opcodetype opcode)
     {
         if (opcode < 0 || opcode > 0xff)

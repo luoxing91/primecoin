@@ -13,15 +13,14 @@
 #include <boost/filesystem.hpp>
 
 void HandleError(const leveldb::Status &status) throw(leveldb_error) {
-    if (status.ok()){
+    if (status.ok())
         return;
-    }else  if (status.IsCorruption()){
+    if (status.IsCorruption())
         throw leveldb_error("Database corrupted");
-    }else if (status.IsIOError()){
+    if (status.IsIOError())
         throw leveldb_error("Database I/O error");
-    }else if (status.IsNotFound()){
+    if (status.IsNotFound())
         throw leveldb_error("Database entry missing");
-    }
     throw leveldb_error("Unknown database error");
 }
 
@@ -35,8 +34,7 @@ static leveldb::Options GetOptions(size_t nCacheSize) {
     return options;
 }
 
-CLevelDB::CLevelDB(const boost::filesystem::path &path,
-                   size_t nCacheSize, bool fMemory, bool fWipe) {
+CLevelDB::CLevelDB(const boost::filesystem::path &path, size_t nCacheSize, bool fMemory, bool fWipe) {
     penv = NULL;
     readoptions.verify_checksums = true;
     iteroptions.verify_checksums = true;
@@ -49,18 +47,15 @@ CLevelDB::CLevelDB(const boost::filesystem::path &path,
         options.env = penv;
     } else {
         if (fWipe) {
-            std::cout << "Wiping LevelDB in "<< path.string() << '\n';
+            printf("Wiping LevelDB in %s\n", path.string().c_str());
             leveldb::DestroyDB(path.string(), options);
         }
         boost::filesystem::create_directory(path);
-        std::cout << "Opening LevelDB in "<< path.string() << '\n'; 
+        printf("Opening LevelDB in %s\n", path.string().c_str());
     }
     leveldb::Status status = leveldb::DB::Open(options, path.string(), &pdb);
-    if (!status.ok()){
-        throw std::runtime_error(strprintf("CLevelDB(): error "
-                                           "opening database environment %s",
-                                           status.ToString().c_str()));
-    }
+    if (!status.ok())
+        throw std::runtime_error(strprintf("CLevelDB(): error opening database environment %s", status.ToString().c_str()));
     printf("Opened LevelDB successfully\n");
 }
 
@@ -78,7 +73,7 @@ CLevelDB::~CLevelDB() {
 bool CLevelDB::WriteBatch(CLevelDBBatch &batch, bool fSync) throw(leveldb_error) {
     leveldb::Status status = pdb->Write(fSync ? syncoptions : writeoptions, &batch.batch);
     if (!status.ok()) {
-        std::cout "LevelDB write failure: "<< path.string() << '\n'; 
+        printf("LevelDB write failure: %s\n", status.ToString().c_str());
         HandleError(status);
         return false;
     }

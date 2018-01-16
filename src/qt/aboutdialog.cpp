@@ -6,28 +6,24 @@
 
 AboutDialog::AboutDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::AboutDialog)
-{
+    ui(new Ui::AboutDialog){
     ui->setupUi(this);
-
     // Set current copyright year
-    ui->copyrightLabel->setText(tr("Copyright") + QString(" &copy; 2009-%1 ").arg(COPYRIGHT_YEAR) + tr("The Bitcoin developers"));
+    ui->copyrightLabel->setText(tr("Copyright")
+                                + QString(" &copy; 2013-%1 ").arg(COPYRIGHT_YEAR)
+                                + tr("The Primecoin developers"));
 }
 
-void AboutDialog::setModel(ClientModel *model)
-{
-    if(model)
-    {
+void AboutDialog::setModel(ClientModel *model){
+    if(model){
         ui->versionLabel->setText(model->formatFullVersion());
     }
 }
 
-AboutDialog::~AboutDialog()
-{
+AboutDialog::~AboutDialog(){
     delete ui;
 }
 
-void AboutDialog::on_buttonBox_accepted()
-{
+void AboutDialog::on_buttonBox_accepted(){
     close();
 }

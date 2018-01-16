@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2013 The Primecoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,43 +19,36 @@ static uint64 nAccountingEntryNumber = 0;
 // CWalletDB
 //
 
-bool CWalletDB::WriteName(const string& strAddress, const string& strName)
-{
+bool CWalletDB::WriteName(const string& strAddress, const string& strName){
     nWalletDBUpdated++;
     return Write(make_pair(string("name"), strAddress), strName);
 }
 
-bool CWalletDB::EraseName(const string& strAddress)
-{
+bool CWalletDB::EraseName(const string& strAddress){
     // This should only be used for sending addresses, never for receiving addresses,
     // receiving addresses must always have an address book entry if they're not change return.
     nWalletDBUpdated++;
     return Erase(make_pair(string("name"), strAddress));
 }
 
-bool CWalletDB::ReadAccount(const string& strAccount, CAccount& account)
-{
+bool CWalletDB::ReadAccount(const string& strAccount, CAccount& account){
     account.SetNull();
     return Read(make_pair(string("acc"), strAccount), account);
 }
 
-bool CWalletDB::WriteAccount(const string& strAccount, const CAccount& account)
-{
+bool CWalletDB::WriteAccount(const string& strAccount, const CAccount& account){
     return Write(make_pair(string("acc"), strAccount), account);
 }
 
-bool CWalletDB::WriteAccountingEntry(const uint64 nAccEntryNum, const CAccountingEntry& acentry)
-{
+bool CWalletDB::WriteAccountingEntry(const uint64 nAccEntryNum, const CAccountingEntry& acentry){
     return Write(boost::make_tuple(string("acentry"), acentry.strAccount, nAccEntryNum), acentry);
 }
 
-bool CWalletDB::WriteAccountingEntry(const CAccountingEntry& acentry)
-{
+bool CWalletDB::WriteAccountingEntry(const CAccountingEntry& acentry){
     return WriteAccountingEntry(++nAccountingEntryNumber, acentry);
 }
 
-int64 CWalletDB::GetAccountCreditDebit(const string& strAccount)
-{
+int64 CWalletDB::GetAccountCreditDebit(const string& strAccount){
     list<CAccountingEntry> entries;
     ListAccountCreditDebit(strAccount, entries);
 
@@ -65,8 +59,7 @@ int64 CWalletDB::GetAccountCreditDebit(const string& strAccount)
     return nCreditDebit;
 }
 
-void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountingEntry>& entries)
-{
+void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountingEntry>& entries){
     bool fAllAccounts = (strAccount == "*");
 
     Dbc* pcursor = GetCursor();
@@ -109,9 +102,7 @@ void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountin
 }
 
 
-DBErrors
-CWalletDB::ReorderTransactions(CWallet* pwallet)
-{
+DBErrors CWalletDB::ReorderTransactions(CWallet* pwallet){
     LOCK(pwallet->cs_wallet);
     // Old wallets didn't have any defined order for transactions
     // Probably a bad idea to change the output of this
@@ -185,48 +176,39 @@ CWalletDB::ReorderTransactions(CWallet* pwallet)
 bool
 ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
              int& nFileVersion, vector<uint256>& vWalletUpgrade,
-             bool& fIsEncrypted,  bool& fAnyUnordered, string& strType, string& strErr)
-{
+             bool& fIsEncrypted,  bool& fAnyUnordered, string& strType, string& strErr){
     try {
         // Unserialize
         // Taking advantage of the fact that pair serialization
         // is just the two items serialized one after the other
         ssKey >> strType;
-        if (strType == "name")
-        {
+        if (strType == "name"){
             string strAddress;
             ssKey >> strAddress;
             ssValue >> pwallet->mapAddressBook[CBitcoinAddress(strAddress).Get()];
-        }
-        else if (strType == "tx")
-        {
+        }else if (strType == "tx"){
             uint256 hash;
             ssKey >> hash;
             CWalletTx& wtx = pwallet->mapWallet[hash];
             ssValue >> wtx;
             CValidationState state;
-            if (wtx.CheckTransaction(state) && (wtx.GetHash() == hash) && state.IsValid())
+            if (wtx.CheckTransaction(state) && (wtx.GetHash() == hash) && state.IsValid()){
                 wtx.BindWallet(pwallet);
-            else
-            {
+            }else{
                 pwallet->mapWallet.erase(hash);
                 return false;
             }
 
             // Undo serialize changes in 31600
-            if (31404 <= wtx.fTimeReceivedIsTxTime && wtx.fTimeReceivedIsTxTime <= 31703)
-            {
-                if (!ssValue.empty())
-                {
+            if (31404 <= wtx.fTimeReceivedIsTxTime && wtx.fTimeReceivedIsTxTime <= 31703){
+                if (!ssValue.empty()){
                     char fTmp;
                     char fUnused;
                     ssValue >> fTmp >> fUnused >> wtx.strFromAccount;
                     strErr = strprintf("LoadWallet() upgrading tx ver=%d %d '%s' %s",
                                        wtx.fTimeReceivedIsTxTime, fTmp, wtx.strFromAccount.c_str(), hash.ToString().c_str());
                     wtx.fTimeReceivedIsTxTime = fTmp;
-                }
-                else
-                {
+                } else {
                     strErr = strprintf("LoadWallet() repairing tx ver=%d %s", wtx.fTimeReceivedIsTxTime, hash.ToString().c_str());
                     wtx.fTimeReceivedIsTxTime = 0;
                 }
@@ -381,14 +363,12 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
     return true;
 }
 
-static bool IsKeyType(string strType)
-{
+static bool IsKeyType(string strType){
     return (strType== "key" || strType == "wkey" ||
             strType == "mkey" || strType == "ckey");
 }
 
-DBErrors CWalletDB::LoadWallet(CWallet* pwallet)
-{
+DBErrors CWalletDB::LoadWallet(CWallet* pwallet){
     pwallet->vchDefaultKey = CPubKey();
     int nFileVersion = 0;
     vector<uint256> vWalletUpgrade;
@@ -485,10 +465,9 @@ DBErrors CWalletDB::LoadWallet(CWallet* pwallet)
     return result;
 }
 
-void ThreadFlushWalletDB(const string& strFile)
-{
+void ThreadFlushWalletDB(const string& strFile){
     // Make this thread recognisable as the wallet flushing thread
-    RenameThread("bitcoin-wallet");
+    RenameThread("primecoin-wallet");
 
     static bool fOneThread;
     if (fOneThread)
@@ -614,8 +593,7 @@ bool CWalletDB::Recover(CDBEnv& dbenv, std::string filename, bool fOnlyKeys)
 
     std::vector<CDBEnv::KeyValPair> salvagedData;
     bool allOK = dbenv.Salvage(newFilename, true, salvagedData);
-    if (salvagedData.empty())
-    {
+    if (salvagedData.empty()){
         printf("Salvage(aggressive) found no records in %s.\n", newFilename.c_str());
         return false;
     }
@@ -673,7 +651,6 @@ bool CWalletDB::Recover(CDBEnv& dbenv, std::string filename, bool fOnlyKeys)
     return fSuccess;
 }
 
-bool CWalletDB::Recover(CDBEnv& dbenv, std::string filename)
-{
+bool CWalletDB::Recover(CDBEnv& dbenv, std::string filename){
     return CWalletDB::Recover(dbenv, filename, false);
 }

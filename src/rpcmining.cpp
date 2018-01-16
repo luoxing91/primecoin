@@ -1,5 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2013 The Primecoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,12 +12,12 @@
 using namespace json_spirit;
 using namespace std;
 
-Value getgenerate(const Array& params, bool fHelp){
-    if (fHelp || params.size() != 0){
+Value getgenerate(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
         throw runtime_error(
             "getgenerate\n"
             "Returns true or false.");
-    }
 
     return GetBoolArg("-gen");
 }
@@ -40,7 +41,6 @@ Value setgenerate(const Array& params, bool fHelp){
         if (nGenProcLimit == 0)
             fGenerate = false;
     }
-    
     mapArgs["-gen"] = (fGenerate ? "1" : "0");
 
     GenerateBitcoins(fGenerate, pwalletMain);
@@ -48,20 +48,19 @@ Value setgenerate(const Array& params, bool fHelp){
 }
 
 
-Value gethashespersec(const Array& params, bool fHelp){
+Value getprimespersec(const Array& params, bool fHelp){
     if (fHelp || params.size() != 0)
         throw runtime_error(
-            "gethashespersec\n"
-            "Returns a recent hashes per second performance measurement while generating.");
+            "getprimespersec\n"
+            "Returns a recent primes per second performance measurement while generating.");
 
-    if (GetTimeMillis() - nHPSTimerStart > 8000)
+    if (GetTimeMillis() - nHPSTimerStart > 120000)
         return (boost::int64_t)0;
-    return (boost::int64_t)dHashesPerSec;
+    return (boost::int64_t)dPrimesPerSec;
 }
 
 
-Value getmininginfo(const Array& params, bool fHelp)
-{
+Value getmininginfo(const Array& params, bool fHelp){
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getmininginfo\n"
@@ -71,19 +70,18 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("blocks",        (int)nBestHeight));
     obj.push_back(Pair("currentblocksize",(uint64_t)nLastBlockSize));
     obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
-    obj.push_back(Pair("difficulty",    (double)GetDifficulty()));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
     obj.push_back(Pair("generate",      GetBoolArg("-gen")));
     obj.push_back(Pair("genproclimit",  (int)GetArg("-genproclimit", -1)));
-    obj.push_back(Pair("hashespersec",  gethashespersec(params, false)));
+    obj.push_back(Pair("primespersec",  getprimespersec(params, false)));
+    obj.push_back(Pair("chainsperday",  dChainsPerDay));
     obj.push_back(Pair("pooledtx",      (uint64_t)mempool.size()));
     obj.push_back(Pair("testnet",       fTestNet));
     return obj;
 }
 
 
-Value getwork(const Array& params, bool fHelp)
-{
+Value getwork(const Array& params, bool fHelp){
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getwork [data]\n"
@@ -95,10 +93,10 @@ Value getwork(const Array& params, bool fHelp)
             "If [data] is specified, tries to solve the block and returns true if it was successful.");
 
     if (vNodes.empty())
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Bitcoin is not connected!");
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Primecoin is not connected!");
 
     if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Bitcoin is downloading blocks...");
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Primecoin is downloading blocks...");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
     static mapNewBlock_t mapNewBlock;    // FIXME: thread safety
@@ -190,6 +188,12 @@ Value getwork(const Array& params, bool fHelp)
         pblock->vtx[0].vin[0].scriptSig = mapNewBlock[pdata->hashMerkleRoot].second;
         pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
+        // Deserialize PrimeChainMultiplier
+        unsigned char primemultiplier[48];
+        memcpy(primemultiplier, &pdata->bnPrimeChainMultiplier, 48);
+        CDataStream ssMult(BEGIN(primemultiplier), END(primemultiplier), SER_NETWORK, PROTOCOL_VERSION);
+        ssMult >> pblock->bnPrimeChainMultiplier;
+
         return CheckWork(pblock, *pwalletMain, *pMiningKey);
     }
 }
@@ -236,10 +240,10 @@ Value getblocktemplate(const Array& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
 
     if (vNodes.empty())
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Bitcoin is not connected!");
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Primecoin is not connected!");
 
     if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Bitcoin is downloading blocks...");
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Primecoin is downloading blocks...");
 
     // Update block
     static unsigned int nTransactionsUpdatedLast;

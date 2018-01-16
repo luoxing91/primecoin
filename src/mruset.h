@@ -8,7 +8,8 @@
 #include <deque>
 
 /** STL-like set container that only keeps the most recent N elements. */
-template <typename T> class mruset{
+template <typename T> class mruset
+{
 public:
     typedef T key_type;
     typedef T value_type;
@@ -40,12 +41,12 @@ public:
     }
     std::pair<iterator, bool> insert(const key_type& x){
         std::pair<iterator, bool> ret = set.insert(x);
-        if (ret.second)
+        if (ret.second)OB
         {
             if (nMaxSize && queue.size() == nMaxSize)
             {
                 set.erase(queue.front());
-                queue.pop_front();
+                queue.pop1;95;0c_front();
             }
             queue.push_back(x);
         }

@@ -27,7 +27,8 @@ CMessageHeader::CMessageHeader(){
     nChecksum = 0;
 }
 
-CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn){
+CMessageHeader::CMessageHeader(const char* pszCommand,
+                               unsigned int nMessageSizeIn){
     memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
     strncpy(pchCommand, pszCommand, COMMAND_SIZE);
     nMessageSize = nMessageSizeIn;
@@ -37,8 +38,9 @@ CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSize
 std::string CMessageHeader::GetCommand() const{
     if (pchCommand[COMMAND_SIZE-1] == 0){
         return std::string(pchCommand, pchCommand + strlen(pchCommand));
+    }else{
+        return std::string(pchCommand, pchCommand + COMMAND_SIZE);
     }
-    return std::string(pchCommand, pchCommand + COMMAND_SIZE);
 }
 
 bool CMessageHeader::IsValid() const{
@@ -50,18 +52,18 @@ bool CMessageHeader::IsValid() const{
     for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++){
         if (*p1 == 0){
             // Must be all zeros after the first zero
-            for (; p1 < pchCommand + COMMAND_SIZE; p1++)
+            for (; p1 < pchCommand + COMMAND_SIZE; p1++){
                 if (*p1 != 0){
                     return false;
                 }
+            }
         }else if (*p1 < ' ' || *p1 > 0x7E){
             return false;
         }
     }
 
     // Message size
-    if (nMessageSize > MAX_SIZE)
-    {
+    if (nMessageSize > MAX_SIZE){
         printf("CMessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
         return false;
     }
@@ -71,38 +73,32 @@ bool CMessageHeader::IsValid() const{
 
 
 
-CAddress::CAddress() : CService()
-{
+CAddress::CAddress() : CService(){
     Init();
 }
 
-CAddress::CAddress(CService ipIn, uint64 nServicesIn) : CService(ipIn)
-{
+CAddress::CAddress(CService ipIn, uint64 nServicesIn) : CService(ipIn){
     Init();
     nServices = nServicesIn;
 }
 
-void CAddress::Init()
-{
+void CAddress::Init(){
     nServices = NODE_NETWORK;
     nTime = 100000000;
     nLastTry = 0;
 }
 
-CInv::CInv()
-{
+CInv::CInv(){
     type = 0;
     hash = 0;
 }
 
-CInv::CInv(int typeIn, const uint256& hashIn)
-{
+CInv::CInv(int typeIn, const uint256& hashIn){
     type = typeIn;
     hash = hashIn;
 }
 
-CInv::CInv(const std::string& strType, const uint256& hashIn)
-{
+CInv::CInv(const std::string& strType, const uint256& hashIn){
     unsigned int i;
     for (i = 1; i < ARRAYLEN(ppszTypeName); i++)
     {

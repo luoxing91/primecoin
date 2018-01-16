@@ -217,6 +217,7 @@ public:
     std::set<CAddress> setAddrKnown;
     bool fGetAddr;
     std::set<uint256> setKnown;
+    uint256 hashCheckpointKnown; // ppcoin: known sent sync-checkpoint
 
     // inventory based relay
     mruset<CInv> setInventoryKnown;
@@ -255,6 +256,7 @@ public:
         fStartSync = false;
         fGetAddr = false;
         nMisbehavior = 0;
+        hashCheckpointKnown = 0;
         fRelayTxes = false;
         setInventoryKnown.max_size(SendBufferSize() / 1000);
         pfilter = new CBloomFilter();
@@ -362,8 +364,10 @@ public:
             nRequestTime = it->second;
         else
             nRequestTime = 0;
-        if (fDebugNet)
-            printf("askfor %s   %" PRI64d " (%s)\n", inv.ToString().c_str(), nRequestTime, DateTimeStrFormat("%H:%M:%S", nRequestTime/1000000).c_str());
+        if (fDebugNet){
+            printf("askfor %s   %" PRI64d " (%s)\n", inv.ToString().c_str(), nRequestTime,
+                   DateTimeStrFormat("%H:%M:%S", nRequestTime/1000000).c_str());
+        }
 
         // Make sure not to reuse time indexes to keep things in the same order
         int64 nNow = (GetTime() - 1) * 1000000;

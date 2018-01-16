@@ -1,7 +1,9 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2011-2013 PPCoin developers
+// Copyright (c) 2013 Primecoin developers
+// Distributed under conditional MIT/X11 software license,
+// see the accompanying file COPYING
 #ifndef BITCOIN_MAIN_H
 #define BITCOIN_MAIN_H
 
@@ -49,10 +51,13 @@ static const unsigned int UNDOFILE_CHUNK_SIZE = 0x100000; // 1 MiB
 /** Fake height value used in CCoins to signify they are only in the memory pool (since 0.8) */
 static const unsigned int MEMPOOL_HEIGHT = 0x7FFFFFFF;
 /** No amount larger than this (in satoshi) is valid */
-static const int64 MAX_MONEY = 21000000 * COIN;
+static const int64 MAX_MONEY = 2000000000u * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
+static const int64 MIN_TX_FEE = CENT;
+static const int64 MIN_RELAY_TX_FEE = MIN_TX_FEE;
+static const int64 MIN_TXOUT_AMOUNT = MIN_TX_FEE;
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
-static const int COINBASE_MATURITY = 100;
+static const int COINBASE_MATURITY = 3000;
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 /** Maximum number of script-checking threads allowed */
@@ -63,6 +68,8 @@ static const int fHaveUPnP = true;
 static const int fHaveUPnP = false;
 #endif
 
+static const uint256 hashGenesisBlockOfficial("0x963d17ba4dc753138078a2f56afb3af9674e2546822badff26837db9a0152106");
+static const uint256 hashGenesisBlockTestNet("0x221156cf301bc3585e72de34fe1efdb6fbd703bc27cfc468faa1cdd889d0efa0");
 
 extern CScript COINBASE_FLAGS;
 
@@ -85,11 +92,13 @@ extern unsigned int nTransactionsUpdated;
 extern uint64 nLastBlockTx;
 extern uint64 nLastBlockSize;
 extern const std::string strMessageMagic;
-extern double dHashesPerSec;
+extern double dPrimesPerSec;
+extern double dChainsPerDay;
 extern int64 nHPSTimerStart;
 extern int64 nTimeBestReceived;
 extern CCriticalSection cs_setpwalletRegistered;
 extern std::set<CWallet*> setpwalletRegistered;
+extern std::map<uint256, CBlock*> mapOrphanBlocks;
 extern unsigned char pchMessageStart[4];
 extern bool fImporting;
 extern bool fReindex;
@@ -163,7 +172,7 @@ void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash
 /** Check mined block */
 bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
 /** Check whether a block hash satisfies the proof-of-work requirement specified by nBits */
-bool CheckProofOfWork(uint256 hash, unsigned int nBits);
+bool CheckProofOfWork(uint256 hashBlockHeader, unsigned int nBits, const CBigNum& bnPrimeChainMultiplier, unsigned int& nChainType, unsigned int& nChainLength);
 /** Calculate the minimum amount of work a received block needs, without knowing its direct parent */
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime);
 /** Get the number of active peers */
@@ -445,8 +454,7 @@ public:
     {
         if (scriptPubKey.size() < 6)
             return "CTxOut(error)";
-        return strprintf("CTxOut(nValue=%" PRI64d ".%08" PRI64d ", scriptPubKey=%s)",
-                         nValue / COIN, nValue % COIN, scriptPubKey.ToString().substr(0,30).c_str());
+        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", nValue / COIN, nValue % COIN, scriptPubKey.ToString().substr(0,30).c_str());
     }
 
     void print() const
@@ -620,7 +628,7 @@ public:
         return dPriority > COIN * 144 / 250;
     }
 
-    int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, enum GetMinFee_mode mode=GMF_BLOCK) const;
+    int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=false, enum GetMinFee_mode mode=GMF_BLOCK) const;
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
@@ -639,7 +647,7 @@ public:
     std::string ToString() const
     {
         std::string str;
-        str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%" PRIszu ", vout.size=%" PRIszu ", nLockTime=%u)\n",
+        str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%"PRIszu", vout.size=%"PRIszu", nLockTime=%u)\n",
             GetHash().ToString().c_str(),
             nVersion,
             vin.size(),
@@ -1274,8 +1282,15 @@ public:
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     unsigned int nTime;
-    unsigned int nBits;
+    unsigned int nBits;  // Primecoin: prime chain target, see prime.cpp
     unsigned int nNonce;
+
+    // Primecoin: proof-of-work certificate
+    // Multiplier to block hash to derive the probable prime chain (k=0, 1, ...)
+    // Cunningham Chain of first kind:  hash * multiplier * 2**k - 1
+    // Cunningham Chain of second kind: hash * multiplier * 2**k + 1
+    // BiTwin Chain:                    hash * multiplier * 2**k +/- 1
+    CBigNum bnPrimeChainMultiplier;
 
     CBlockHeader()
     {
@@ -1291,6 +1306,7 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+        READWRITE(bnPrimeChainMultiplier);
     )
 
     void SetNull()
@@ -1301,6 +1317,7 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        bnPrimeChainMultiplier = 0;
     }
 
     bool IsNull() const
@@ -1308,9 +1325,18 @@ public:
         return (nBits == 0);
     }
 
-    uint256 GetHash() const
+    // Primecoin: header hash does not include prime certificate
+    uint256 GetHeaderHash() const
     {
         return Hash(BEGIN(nVersion), END(nNonce));
+    }
+
+    // Primecoin: block hash includes prime certificate
+    uint256 GetHash() const
+    {
+        CDataStream ss(SER_GETHASH, 0);
+        ss << nVersion << hashPrevBlock << hashMerkleRoot << nTime << nBits << nNonce << bnPrimeChainMultiplier;
+        return Hash(ss.begin(), ss.end());
     }
 
     int64 GetBlockTime() const
@@ -1329,6 +1355,8 @@ public:
 
     // memory only
     mutable std::vector<uint256> vMerkleTree;
+    unsigned int nPrimeChainType;   // primecoin: chain type (memory-only)
+    unsigned int nPrimeChainLength; // primecoin: chain length (memory-only)
 
     CBlock()
     {
@@ -1352,6 +1380,8 @@ public:
         CBlockHeader::SetNull();
         vtx.clear();
         vMerkleTree.clear();
+        nPrimeChainType = 0;
+        nPrimeChainLength = 0;
     }
 
     CBlockHeader GetBlockHeader() const
@@ -1465,10 +1495,8 @@ public:
             return error("%s() : deserialize or I/O error", __PRETTY_FUNCTION__);
         }
 
+        // Primecoin: no proof-of-work check here unlike bitcoin
         // Check the header
-        if (!CheckProofOfWork(GetHash(), nBits))
-            return error("CBlock::ReadFromDisk() : errors in block header");
-
         return true;
     }
 
@@ -1476,8 +1504,9 @@ public:
 
     void print() const
     {
-        printf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%" PRIszu ")\n",
+        printf("CBlock(hash=%s, hashBlockHeader=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%"PRIszu")\n",
             GetHash().ToString().c_str(),
+            GetHeaderHash().ToString().c_str(),
             nVersion,
             hashPrevBlock.ToString().c_str(),
             hashMerkleRoot.ToString().c_str(),
@@ -1631,6 +1660,12 @@ public:
     // (memory only) Total amount of work (expected number of hashes) in the chain up to and including this block
     uint256 nChainWork;
 
+    unsigned int nWorkTransition; // primecoin: work transition ratio (memory-only)
+
+    unsigned int nPrimeChainType;   // primecoin: chain type
+    unsigned int nPrimeChainLength; // primecoin: chain length
+    int64 nMoneySupply;             // primecoin: money supply
+
     // Number of transactions in this block.
     // Note: in a potential headers-first mode, this number cannot be relied upon
     unsigned int nTx;
@@ -1659,6 +1694,10 @@ public:
         nDataPos = 0;
         nUndoPos = 0;
         nChainWork = 0;
+        nWorkTransition = 0;
+        nPrimeChainType = 0;
+        nPrimeChainLength = 0;
+        nMoneySupply = 0;
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
@@ -1680,6 +1719,10 @@ public:
         nDataPos = 0;
         nUndoPos = 0;
         nChainWork = 0;
+        nWorkTransition = 0;
+        nPrimeChainType = 0;
+        nPrimeChainLength = 0;
+        nMoneySupply = 0;
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
@@ -1732,14 +1775,7 @@ public:
         return (int64)nTime;
     }
 
-    CBigNum GetBlockWork() const
-    {
-        CBigNum bnTarget;
-        bnTarget.SetCompact(nBits);
-        if (bnTarget <= 0)
-            return 0;
-        return (CBigNum(1)<<256) / (bnTarget+1);
-    }
+    CBigNum GetBlockWork() const;
 
     bool IsInMainChain() const
     {
@@ -1748,10 +1784,12 @@ public:
 
     bool CheckIndex() const
     {
-        return CheckProofOfWork(GetBlockHash(), nBits);
+        // Primecoin: disabled proof-of-work check for loading block index
+        // return CheckProofOfWork(GetBlockHash(), nBits);
+        return true;
     }
 
-    enum { nMedianTimeSpan=11 };
+    enum { nMedianTimeSpan=99 };
 
     int64 GetMedianTimePast() const
     {
@@ -1820,13 +1858,16 @@ class CDiskBlockIndex : public CBlockIndex
 {
 public:
     uint256 hashPrev;
+    uint256 hashBlock; // primecoin: persist block hash as well
 
     CDiskBlockIndex() {
         hashPrev = 0;
+        hashBlock = 0;
     }
 
     explicit CDiskBlockIndex(CBlockIndex* pindex) : CBlockIndex(*pindex) {
         hashPrev = (pprev ? pprev->GetBlockHash() : 0);
+        hashBlock = (pindex ? pindex->GetBlockHash() : 0);
     }
 
     IMPLEMENT_SERIALIZE
@@ -1834,6 +1875,9 @@ public:
         if (!(nType & SER_GETHASH))
             READWRITE(VARINT(nVersion));
 
+        READWRITE(VARINT(nPrimeChainType));
+        READWRITE(VARINT(nPrimeChainLength));
+        READWRITE(VARINT(nMoneySupply));
         READWRITE(VARINT(nHeight));
         READWRITE(VARINT(nStatus));
         READWRITE(VARINT(nTx));
@@ -1851,18 +1895,12 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+        READWRITE(hashBlock);
     )
 
     uint256 GetBlockHash() const
     {
-        CBlockHeader block;
-        block.nVersion        = nVersion;
-        block.hashPrevBlock   = hashPrev;
-        block.hashMerkleRoot  = hashMerkleRoot;
-        block.nTime           = nTime;
-        block.nBits           = nBits;
-        block.nNonce          = nNonce;
-        return block.GetHash();
+        return hashBlock;
     }
 
 

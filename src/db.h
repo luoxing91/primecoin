@@ -28,8 +28,7 @@ void ThreadFlushWalletDB(const std::string& strWalletFile);
 bool BackupWallet(const CWallet& wallet, const std::string& strDest);
 
 
-class CDBEnv
-{
+class CDBEnv{
 private:
     bool fDbEnvInit;
     bool fMockDb;
@@ -97,7 +96,6 @@ protected:
 
     explicit CDB(const char* pszFile, const char* pszMode="r+");
     ~CDB() { Close(); }
-    
 public:
     void Flush();
     void Close();
@@ -123,29 +121,31 @@ protected:
         datValue.set_flags(DB_DBT_MALLOC);
         int ret = pdb->get(activeTxn, &datKey, &datValue, 0);
         memset(datKey.get_data(), 0, datKey.get_size());
-        if (datValue.get_data() == NULL){
+        if (datValue.get_data() == NULL)
             return false;
-        }
 
         // Unserialize value
         try {
             CDataStream ssValue((char*)datValue.get_data(), (char*)datValue.get_data() + datValue.get_size(), SER_DISK, CLIENT_VERSION);
             ssValue >> value;
-        }catch (std::exception &e) {
+        }
+        catch (std::exception &e) {
             return false;
         }
 
         // Clear and free memory
-        bzero(datValue.get_data(), datValue.get_size());
+        memset(datValue.get_data(), 0, datValue.get_size());
         free(datValue.get_data());
         return (ret == 0);
     }
 
     template<typename K, typename T>
-    bool Write(const K& key, const T& value, bool fOverwrite=true){
+        bool Write(const K& key, const T& value, bool fOverwrite=true){
+        
         if (!pdb){
             return false;
         }
+        
         if (fReadOnly){
             assert(!"Write called on database in read-only mode");
         }
@@ -166,17 +166,16 @@ protected:
         int ret = pdb->put(activeTxn, &datKey, &datValue, (fOverwrite ? 0 : DB_NOOVERWRITE));
 
         // Clear memory in case it was a private key
-        bzero(datKey.get_data(),  datKey.get_size());
-        bzero(datValue.get_data(),  datValue.get_size());
+        memset(datKey.get_data(), 0, datKey.get_size());
+        memset(datValue.get_data(), 0, datValue.get_size());
         return (ret == 0);
     }
 
     template<typename K>
-    bool Erase(const K& key){
+        bool Erase(const K& key){
         if (!pdb){
             return false;
         }
-        
         if (fReadOnly){
             assert(!"Erase called on database in read-only mode");
         }
@@ -196,7 +195,7 @@ protected:
     }
 
     template<typename K>
-    bool Exists(const K& key){
+        bool Exists(const K& key){
         if (!pdb){
             return false;
         }
@@ -215,18 +214,21 @@ protected:
         return (ret == 0);
     }
 
-    Dbc* GetCursor()
-    {
-        if (!pdb)
+    Dbc* GetCursor(){
+        if (!pdb){
             return NULL;
+        }
+        
         Dbc* pcursor = NULL;
         int ret = pdb->cursor(NULL, &pcursor, 0);
-        if (ret != 0)
+        if (ret != 0){
             return NULL;
+        }
         return pcursor;
     }
 
-    int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue, unsigned int fFlags=DB_NEXT)
+    int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue,
+                     unsigned int fFlags=DB_NEXT)
     {
         // Read at cursor
         Dbt datKey;

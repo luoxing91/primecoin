@@ -10,7 +10,8 @@
 #include <string>
 
 static bool noui_ThreadSafeMessageBox(const std::string& message,
-                                      const std::string& caption, unsigned int style){
+                                      const std::string& caption,
+                                      unsigned int style){
     std::string strCaption;
     // Check for usage of predefined caption
     switch (style) {
@@ -32,18 +33,15 @@ static bool noui_ThreadSafeMessageBox(const std::string& message,
     return false;
 }
 
-static bool noui_ThreadSafeAskFee(int64 /*nFeeRequired*/)
-{
+static bool noui_ThreadSafeAskFee(int64 /*nFeeRequired*/){
     return true;
 }
 
-static void noui_InitMessage(const std::string &message)
-{
+static void noui_InitMessage(const std::string &message){
     printf("init message: %s\n", message.c_str());
 }
 
-void noui_connect()
-{
+void noui_connect(){
     // Connect bitcoind signal handlers
     uiInterface.ThreadSafeMessageBox.connect(noui_ThreadSafeMessageBox);
     uiInterface.ThreadSafeAskFee.connect(noui_ThreadSafeAskFee);
