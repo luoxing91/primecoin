@@ -206,9 +206,9 @@ protected:
     int nMisbehavior;
 
 public:
-    uint256 hashContinue;
+    uint256_t hashContinue;
     CBlockIndex* pindexLastGetBlocksBegin;
-    uint256 hashLastGetBlocksEnd;
+    uint256_t hashLastGetBlocksEnd;
     int nStartingHeight;
     bool fStartSync;
 
@@ -217,7 +217,7 @@ public:
     std::set<CAddress> setAddrKnown;
     bool fGetAddr;
     std::set<uint256> setKnown;
-    uint256 hashCheckpointKnown; // ppcoin: known sent sync-checkpoint
+    uint256_t hashCheckpointKnown; // ppcoin: known sent sync-checkpoint
 
     // inventory based relay
     mruset<CInv> setInventoryKnown;
@@ -225,7 +225,9 @@ public:
     CCriticalSection cs_inventory;
     std::multimap<int64, CInv> mapAskFor;
 
-    CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : ssSend(SER_NETWORK, MIN_PROTO_VERSION)
+    CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "",
+          bool fInboundIn=false) : ssSend(SER_NETWORK, MIN_PROTO_VERSION),
+        hashContinue(),   hashLastGetBlocksEnd() , hashCheckpointKnown()
     {
         nServices = 0;
         hSocket = hSocketIn;
@@ -249,14 +251,14 @@ public:
         nRefCount = 0;
         nSendSize = 0;
         nSendOffset = 0;
-        hashContinue = 0;
+        //hashContinue = 0;
         pindexLastGetBlocksBegin = 0;
-        hashLastGetBlocksEnd = 0;
+        //hashLastGetBlocksEnd = 0;
         nStartingHeight = -1;
         fStartSync = false;
         fGetAddr = false;
         nMisbehavior = 0;
-        hashCheckpointKnown = 0;
+        
         fRelayTxes = false;
         setInventoryKnown.max_size(SendBufferSize() / 1000);
         pfilter = new CBloomFilter();

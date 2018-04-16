@@ -41,26 +41,24 @@ public:
     }
     std::pair<iterator, bool> insert(const key_type& x){
         std::pair<iterator, bool> ret = set.insert(x);
-        if (ret.second)OB
-        {
+        if (ret.second){
             if (nMaxSize && queue.size() == nMaxSize)
             {
                 set.erase(queue.front());
-                queue.pop1;95;0c_front();
+                queue.pop_front();
             }
             queue.push_back(x);
         }
         return ret;
     }
     size_type max_size() const { return nMaxSize; }
-    size_type max_size(size_type s)
-    {
-        if (s)
-            while (queue.size() > s)
-            {
+    size_type max_size(size_type s){
+        if (s){
+            while (queue.size() > s){
                 set.erase(queue.front());
                 queue.pop_front();
             }
+        }
         nMaxSize = s;
         return nMaxSize;
     }

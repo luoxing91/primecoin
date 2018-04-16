@@ -11,7 +11,7 @@
 #include "sync.h"
 #include "net.h"
 #include "script.h"
-
+#include <iostream>
 #include <list>
 
 class CWallet;
@@ -285,7 +285,8 @@ public:
     COutPoint() { SetNull(); }
     COutPoint(uint256 hashIn, unsigned int nIn) { hash = hashIn; n = nIn; }
     IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
-    void SetNull() { hash = 0; n = (unsigned int) -1; }
+        
+    void SetNull() { hash = uint256(); n = (unsigned int) -1; }
     bool IsNull() const { return (hash == 0 && n == (unsigned int) -1); }
 
     friend bool operator<(const COutPoint& a, const COutPoint& b)
@@ -450,16 +451,18 @@ public:
 
     bool IsDust() const;
 
-    std::string ToString() const
-    {
-        if (scriptPubKey.size() < 6)
+    std::string ToString() const{
+        if (scriptPubKey.size() < 6){
             return "CTxOut(error)";
-        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", nValue / COIN, nValue % COIN, scriptPubKey.ToString().substr(0,30).c_str());
+        }
+        return strprintf("CTxOut(nValue=%" PRI64d ".%08" PRI64d ", scriptPubKey=%s)",
+                         nValue / COIN,
+                         nValue % COIN, scriptPubKey.ToString().substr(0,30).c_str());
     }
 
-    void print() const
-    {
-        printf("%s\n", ToString().c_str());
+    void print() const{
+        //printf("%s\n", ToString().c_str());
+        std::cout << ToString() << std::endl;
     }
 };
 
@@ -647,7 +650,8 @@ public:
     std::string ToString() const
     {
         std::string str;
-        str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%"PRIszu", vout.size=%"PRIszu", nLockTime=%u)\n",
+        str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%"
+                         PRIszu ", vout.size=%" PRIszu ", nLockTime=%u)\n",
             GetHash().ToString().c_str(),
             nVersion,
             vin.size(),
@@ -833,8 +837,9 @@ public:
         CHashWriter hasher(SER_GETHASH, PROTOCOL_VERSION);
         hasher << hashBlock;
         hasher << *this;
-        if (hashChecksum != hasher.GetHash())
+        if (hashChecksum != hasher.GetHash()){
             return error("CBlockUndo::ReadFromDisk() : checksum mismatch");
+        }
 
         return true;
     }
@@ -1141,7 +1146,7 @@ public:
 
     void Init()
     {
-        hashBlock = 0;
+        hashBlock = uint256();
         nIndex = -1;
         fMerkleVerified = false;
     }
@@ -1312,8 +1317,8 @@ public:
     void SetNull()
     {
         nVersion = CBlockHeader::CURRENT_VERSION;
-        hashPrevBlock = 0;
-        hashMerkleRoot = 0;
+        hashPrevBlock = uint256();
+        hashMerkleRoot = uint256();
         nTime = 0;
         nBits = 0;
         nNonce = 0;
@@ -1502,9 +1507,8 @@ public:
 
 
 
-    void print() const
-    {
-        printf("CBlock(hash=%s, hashBlockHeader=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%"PRIszu")\n",
+    void print() const{
+        printf("CBlock(hash=%s, hashBlockHeader=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%" PRIszu ")\n",
             GetHash().ToString().c_str(),
             GetHeaderHash().ToString().c_str(),
             nVersion,
@@ -1684,8 +1688,7 @@ public:
     unsigned int nNonce;
 
 
-    CBlockIndex()
-    {
+    CBlockIndex(){
         phashBlock = NULL;
         pprev = NULL;
         pnext = NULL;
@@ -1693,7 +1696,7 @@ public:
         nFile = 0;
         nDataPos = 0;
         nUndoPos = 0;
-        nChainWork = 0;
+        nChainWork = uint256();
         nWorkTransition = 0;
         nPrimeChainType = 0;
         nPrimeChainLength = 0;
@@ -1703,7 +1706,7 @@ public:
         nStatus = 0;
 
         nVersion       = 0;
-        hashMerkleRoot = 0;
+        hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
@@ -1718,7 +1721,7 @@ public:
         nFile = 0;
         nDataPos = 0;
         nUndoPos = 0;
-        nChainWork = 0;
+        nChainWork = uint256();
         nWorkTransition = 0;
         nPrimeChainType = 0;
         nPrimeChainLength = 0;
@@ -1861,8 +1864,8 @@ public:
     uint256 hashBlock; // primecoin: persist block hash as well
 
     CDiskBlockIndex() {
-        hashPrev = 0;
-        hashBlock = 0;
+        hashPrev = uint256();
+        hashBlock = uint256();
     }
 
     explicit CDiskBlockIndex(CBlockIndex* pindex) : CBlockIndex(*pindex) {

@@ -242,18 +242,17 @@ void runCommand(std::string strCommand);
 
 
 
-inline std::string i64tostr(int64 n)
-{
-    return strprintf("%"PRI64d, n);
-}
+/* inline std::string i64tostr(int64_t n){ */
+/*     std::st */
+/*     return strprintf("%" PRI64d, n); */
+/* } */
 
-inline std::string itostr(int n)
-{
-    return strprintf("%d", n);
-}
+/* inline std::string itostr(int n) */
+/* { */
+/*     return strprintf("%d", n); */
+/* } */
 
-inline int64 atoi64(const char* psz)
-{
+inline int64 atoi64(const char* psz){
 #ifdef _MSC_VER
     return _atoi64(psz);
 #else
@@ -261,13 +260,8 @@ inline int64 atoi64(const char* psz)
 #endif
 }
 
-inline int64 atoi64(const std::string& str)
-{
-#ifdef _MSC_VER
-    return _atoi64(str.c_str());
-#else
-    return strtoll(str.c_str(), NULL, 10);
-#endif
+inline int64 atoi64(const std::string& str){
+    return atoi64(str.c_str());
 }
 
 inline int atoi(const std::string& str)
